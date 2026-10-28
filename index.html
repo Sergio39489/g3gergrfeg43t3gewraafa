@@ -43,13 +43,20 @@ label.btn{background:var(--card);color:var(--text);border:1px solid var(--border
     <button id="copyBtn" type="button" style="width:100%">Copiar código</button>
   </section>
 </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 
 function fail(msg){
   $('result').style.display = 'none';
   $('err').textContent = msg;
+  $('err').style.color = 'var(--err)';
+  $('err').style.display = 'block';
+}
+function info(msg){
+  $('result').style.display = 'none';
+  $('err').textContent = msg;
+  $('err').style.color = 'var(--muted)';
   $('err').style.display = 'block';
 }
 function show(code){
@@ -78,11 +85,14 @@ function scan(img){
   return null;
 }
 function handle(blob){
+  if (typeof jsQR === 'undefined'){ fail('No se ha cargado el lector de QR. Comprueba tu conexión a internet y recarga la página.'); return; }
   if (!blob || !blob.type.startsWith('image/')){ fail('No he encontrado ninguna imagen.'); return; }
+  info('Leyendo imagen…');
   const url = URL.createObjectURL(blob);
   const img = new Image();
   img.onload = () => {
-    const t = scan(img);
+    let t = null;
+    try { t = scan(img); } catch(e){ URL.revokeObjectURL(url); fail('Error al leer la imagen: ' + e.message); return; }
     URL.revokeObjectURL(url);
     t ? found(t) : fail('No he podido leer ningún QR en esa imagen. Prueba con una captura más nítida o recortada al QR.');
   };
@@ -91,6 +101,7 @@ function handle(blob){
 }
 
 $('pasteBtn').onclick = async () => {
+  info('Toca «Pegar» cuando aparezca el aviso…');
   try{
     const items = await navigator.clipboard.read();
     for (const it of items){
